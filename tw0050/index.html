@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>0050 成份股選股儀表板</title>
+<style>
+:root{
+  --bg:#f5f6f8; --card:#ffffff; --text:#1a1d24; --muted:#6b7280;
+  --border:#e5e7eb; --accent:#0f6fd6; --up:#d6453a; --down:#1f9d55;
+  --gold:#b8860b; --shadow:0 1px 4px rgba(0,0,0,.08);
+}
+@media (prefers-color-scheme: dark){
+  :root{--bg:#12141a; --card:#1c1f28; --text:#e8eaf0; --muted:#9aa1af;
+        --border:#2b303c; --accent:#5aa2f0; --shadow:0 1px 4px rgba(0,0,0,.4);}
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Microsoft JhengHei","Noto Sans TC",sans-serif;background:var(--bg);color:var(--text);padding:20px;max-width:1200px;margin:0 auto}
+h1{font-size:1.5rem;margin-bottom:4px}
+.sub{color:var(--muted);font-size:.85rem;margin-bottom:20px;line-height:1.6}
+h2{font-size:1.1rem;margin:26px 0 12px;border-left:4px solid var(--accent);padding-left:10px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;box-shadow:var(--shadow);position:relative}
+.card .rank{position:absolute;top:10px;right:12px;font-size:1.6rem;font-weight:700;color:var(--border)}
+.card.top3 .rank{color:var(--gold)}
+.card .name{font-size:1.05rem;font-weight:700}
+.card .code{color:var(--muted);font-size:.8rem;margin-left:6px}
+.card .ind{display:inline-block;font-size:.7rem;color:var(--accent);border:1px solid var(--accent);border-radius:99px;padding:1px 8px;margin:6px 0}
+.card .price{font-size:1.2rem;font-weight:600;margin:2px 0}
+.chg{font-size:.85rem}
+.chg.up{color:var(--up)} .chg.down{color:var(--down)}
+.scorebar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--border);margin:8px 0 4px}
+.scorebar i{height:100%}
+.scorebar .t{background:#4e8fd9}.scorebar .c{background:#e0a23c}.scorebar .f{background:#4caf7d}
+.card .total{font-weight:700;font-size:.95rem}
+.legend{display:flex;gap:14px;font-size:.75rem;color:var(--muted);margin:10px 0}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+table{width:100%;border-collapse:collapse;background:var(--card);border-radius:10px;overflow:hidden;box-shadow:var(--shadow);font-size:.85rem}
+.tablewrap{overflow-x:auto;border-radius:10px}
+th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap}
+th:nth-child(2),td:nth-child(2),th:nth-child(3),td:nth-child(3){text-align:left}
+th{background:var(--card);cursor:pointer;user-select:none;color:var(--muted);position:sticky;top:0}
+th:hover{color:var(--accent)}
+tr:hover td{background:rgba(90,150,240,.06)}
+.bar-row{display:flex;align-items:center;gap:10px;margin:6px 0}
+.bar-row .lbl{width:110px;font-size:.85rem;text-align:right;flex-shrink:0}
+.bar-row .bar{flex:1;height:18px;background:var(--border);border-radius:4px;overflow:hidden}
+.bar-row .bar i{display:block;height:100%;background:linear-gradient(90deg,#4e8fd9,#5aa2f0);border-radius:4px}
+.bar-row .val{width:80px;font-size:.8rem;color:var(--muted)}
+.foot{margin:30px 0 10px;color:var(--muted);font-size:.75rem;line-height:1.7}
+.pill{display:inline-block;padding:0 6px;border-radius:4px;font-size:.75rem}
+.pill.ok{background:rgba(76,175,125,.15);color:var(--down)}
+.sig{display:inline-block;font-size:.7rem;border-radius:4px;padding:1px 6px;margin:3px 3px 0 0;border:1px solid var(--border);color:var(--muted)}
+.sig.on{background:rgba(214,69,58,.12);border-color:var(--up);color:var(--up);font-weight:700}
+</style>
+</head>
+<body>
+<h1>📈 0050 成份股選股儀表板</h1>
+<div class="sub" id="meta">載入中…</div>
+
+<h2>🏆 綜合評分 前 10 名</h2>
+<div class="legend">
+  <span><i style="background:#4e8fd9"></i>技術面 40</span>
+  <span><i style="background:#e0a23c"></i>籌碼面 30</span>
+  <span><i style="background:#4caf7d"></i>基本面 30</span>
+</div>
+<div class="cards" id="top10"></div>
+
+<h2>⚡ 短線動能訊號（滿分 100）</h2>
+<div class="legend" id="mlegend"></div>
+<div class="cards" id="momentum"></div>
+
+<h2>🏭 產業趨勢（平均分數）</h2>
+<div id="industries"></div>
+
+<h2>📋 全部成份股（點欄位標題可排序）</h2>
+<div class="tablewrap">
+<table id="tbl">
+<thead><tr>
+<th data-k="rank">排名</th><th data-k="code">代碼</th><th data-k="name">名稱</th>
+<th data-k="industry">產業</th><th data-k="close">收盤</th><th data-k="chg1d">日漲跌%</th>
+<th data-k="chg20d">月漲跌%</th><th data-k="score">總分</th><th data-k="m_score">動能</th><th data-k="tech">技術</th>
+<th data-k="chips">籌碼</th><th data-k="fund">基本</th><th data-k="rsi">RSI</th>
+<th data-k="foreign5">外資5日</th><th data-k="trust5">投信5日</th>
+<th data-k="yoy">營收YoY%</th><th data-k="pe">本益比</th><th data-k="yield">殖利率%</th>
+</tr></thead>
+<tbody></tbody>
+</table>
+</div>
+
+<div class="foot">
+⚠️ 本工具僅供研究參考，非投資建議。資料來源：元大投信（成份股）、Yahoo Finance（股價）、台灣證交所 OpenAPI（估值、月營收、法人買賣超）。<br>
+評分模型：技術面 40 分（站上20日線、均線多頭、RSI 50–70、量能放大）＋ 籌碼面 30 分（外資/投信 5 日買超、法人當日買超）＋ 基本面 30 分（營收年增、本益比低於同業、殖利率）。<br>
+<span id="mfoot">短線動能訊號說明載入中…</span>
+</div>
+
+<script src="result.js"></script>
+<script>
+const R = window.RESULT;
+if(!R){ document.getElementById('meta').textContent = '找不到 result.js，請先執行 run_daily.py'; }
+else{
+  const fmt = n => n==null ? '–' : n.toLocaleString('zh-TW');
+  const sh = n => n==null ? '–' : (Math.abs(n)>=1e8 ? (n/1e8).toFixed(1)+'億' : (n/1e3).toFixed(0)+'張'); // 股數→張(千股)
+  const shares = n => n==null ? '–' : Math.round(n/1000).toLocaleString('zh-TW');
+
+  document.getElementById('meta').innerHTML =
+    `報表產生：${R.generated_at}　|　成份股名單：${R.constituents_asof}（${R.constituents_source}）　|　法人統計日：${R.inst_dates.slice().reverse().map(d=>d.slice(4,6)+'/'+d.slice(6)).join('、')}`;
+
+  // Top 10 卡片
+  const top = R.stocks.slice(0,10).map((s,i)=>`
+    <div class="card ${i<3?'top3':''}">
+      <div class="rank">#${s.rank}</div>
+      <div><span class="name">${s.name}</span><span class="code">${s.code}</span></div>
+      <div class="ind">${s.industry}</div>
+      <div class="price">${s.close ?? '–'} <span class="chg ${s.chg1d>0?'up':s.chg1d<0?'down':''}">${s.chg1d>0?'▲':s.chg1d<0?'▼':''}${s.chg1d==null?'':Math.abs(s.chg1d)+'%'}</span></div>
+      <div class="scorebar">
+        <i class="t" style="width:${s.tech/100*100}%"></i>
+        <i class="c" style="width:${s.chips/100*100}%"></i>
+        <i class="f" style="width:${s.fund/100*100}%"></i>
+      </div>
+      <div class="total">總分 ${s.score} <span style="color:var(--muted);font-weight:400;font-size:.78rem">（技${s.tech}／籌${s.chips}／基${s.fund}）</span></div>
+    </div>`).join('');
+  document.getElementById('top10').innerHTML = top;
+
+  // 短線動能訊號卡片（門檻說明由 config 的 momentum 區塊帶出，改參數不用改網頁）
+  const SIGS = [['ma_all','站上三線'],['volume','量增'],['kd_cross','KD金叉'],
+                ['rsi_ok','RSI強'],['macd_cross','MACD金叉']];
+  const MC = R.momentum_cfg;
+  if(MC){
+    document.getElementById('mlegend').innerHTML =
+      `<span>站上5/10/20日線 ${MC.weights.ma_all}</span>`+
+      `<span>量 &gt; 前5日均量×${MC.vol_ratio} ${MC.weights.volume}</span>`+
+      `<span>KD金叉 ${MC.kd_cross_low}–${MC.kd_cross_high} 內 ${MC.weights.kd_cross}</span>`+
+      `<span>RSI ${MC.rsi_low}–${MC.rsi_high} ${MC.weights.rsi}</span>`+
+      `<span>MACD金叉 ${MC.weights.macd_cross}</span>`;
+    document.getElementById('mfoot').textContent =
+      `短線動能訊號（獨立滿分 100）：站上 5/10/20 日均線（${MC.weights.ma_all}）＋ 今日量 > 前 5 日均量×${MC.vol_ratio}（${MC.weights.volume}）＋ KD(9,3,3) 黃金交叉且交叉日 K 值 ${MC.kd_cross_low}–${MC.kd_cross_high}（${MC.weights.kd_cross}）＋ RSI ${MC.rsi_low}–${MC.rsi_high}（${MC.weights.rsi}）＋ MACD(12,26,9) 黃金交叉（${MC.weights.macd_cross}）；交叉訊號 ${MC.cross_lookback_days} 個交易日內有效，門檻可在 config.json 的 momentum 區塊調整。`;
+  }
+  const moms = R.stocks.filter(s=>s.m_score>0)
+    .sort((a,b)=>b.m_score-a.m_score || b.score-a.score).slice(0,10);
+  document.getElementById('momentum').innerHTML = moms.length ? moms.map(s=>`
+    <div class="card ${s.m_score>=80?'top3':''}">
+      <div class="rank">${s.m_score}</div>
+      <div><span class="name">${s.name}</span><span class="code">${s.code}</span></div>
+      <div class="price">${s.close ?? '–'} <span class="chg ${s.chg1d>0?'up':s.chg1d<0?'down':''}">${s.chg1d>0?'▲':s.chg1d<0?'▼':''}${s.chg1d==null?'':Math.abs(s.chg1d)+'%'}</span></div>
+      <div>${SIGS.map(([k,l])=>`<span class="sig ${s.m[k]?'on':''}">${s.m[k]?'✓':'✗'} ${l}</span>`).join('')}</div>
+      <div class="total" style="margin-top:8px;font-size:.8rem;color:var(--muted);font-weight:400">
+        K ${s.m.k ?? '–'}／D ${s.m.kd_d ?? '–'}／RSI ${s.d.rsi ?? '–'}／DIF ${s.m.dif ?? '–'}</div>
+    </div>`).join('')
+    : '<div class="sub" style="margin:0">今日沒有股票觸發動能訊號</div>';
+
+  // 產業條狀圖
+  const maxAvg = Math.max(...R.industries.map(x=>x.avgScore), 1);
+  document.getElementById('industries').innerHTML = R.industries.map(x=>`
+    <div class="bar-row">
+      <div class="lbl">${x.name}（${x.count}檔）</div>
+      <div class="bar"><i style="width:${x.avgScore/maxAvg*100}%"></i></div>
+      <div class="val">${x.avgScore} 分</div>
+    </div>`).join('');
+
+  // 全表
+  const rows = R.stocks.map(s=>({
+    rank:s.rank, code:s.code, name:s.name, industry:s.industry, close:s.close,
+    chg1d:s.chg1d, chg20d:s.chg20d, score:s.score, m_score:s.m_score, tech:s.tech, chips:s.chips,
+    fund:s.fund, rsi:s.d.rsi, foreign5:s.d.foreign5, trust5:s.d.trust5,
+    yoy:s.d.yoy, pe:s.d.pe, yield:s.d.yield
+  }));
+  const tbody = document.querySelector('#tbl tbody');
+  let sortK='rank', asc=true;
+  function render(){
+    const arr = rows.slice().sort((a,b)=>{
+      const x=a[sortK], y=b[sortK];
+      if(x==null) return 1; if(y==null) return -1;
+      return (x<y?-1:x>y?1:0)*(asc?1:-1);
+    });
+    tbody.innerHTML = arr.map(r=>`<tr>
+      <td>${r.rank}</td><td>${r.code}</td><td>${r.name}</td><td>${r.industry}</td>
+      <td>${r.close ?? '–'}</td>
+      <td class="chg ${r.chg1d>0?'up':r.chg1d<0?'down':''}">${r.chg1d ?? '–'}</td>
+      <td class="chg ${r.chg20d>0?'up':r.chg20d<0?'down':''}">${r.chg20d ?? '–'}</td>
+      <td><b>${r.score}</b></td><td>${r.m_score ?? 0}</td><td>${r.tech}</td><td>${r.chips}</td><td>${r.fund}</td>
+      <td>${r.rsi ?? '–'}</td>
+      <td class="chg ${r.foreign5>0?'up':r.foreign5<0?'down':''}">${shares(r.foreign5)}</td>
+      <td class="chg ${r.trust5>0?'up':r.trust5<0?'down':''}">${shares(r.trust5)}</td>
+      <td class="chg ${r.yoy>0?'up':r.yoy<0?'down':''}">${r.yoy ?? '–'}</td>
+      <td>${r.pe ?? '–'}</td><td>${r.yield ?? '–'}</td>
+    </tr>`).join('');
+  }
+  document.querySelectorAll('#tbl th').forEach(th=>th.onclick=()=>{
+    const k=th.dataset.k;
+    if(sortK===k) asc=!asc; else {sortK=k; asc = (k==='rank'||k==='code'||k==='name'||k==='industry');}
+    render();
+  });
+  render();
+}
+</script>
+</body>
+</html>

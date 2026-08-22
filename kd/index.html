@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>COCO姐 股票KD黃金交叉線</title>
+<link rel="icon" type="image/png" href="coco-favicon.png">
+<link rel="apple-touch-icon" href="coco-favicon.png">
+<style>
+:root{
+  --bg:#f5f6f8; --card:#ffffff; --text:#1a1d24; --muted:#6b7280;
+  --border:#e5e7eb; --accent:#0f6fd6; --up:#d6453a; --down:#1f9d55;
+  --shadow:0 1px 4px rgba(0,0,0,.08);
+}
+@media (prefers-color-scheme: dark){
+  :root{--bg:#12141a; --card:#1c1f28; --text:#e8eaf0; --muted:#9aa1af;
+        --border:#2b303c; --accent:#5aa2f0; --shadow:0 1px 4px rgba(0,0,0,.4);}
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Microsoft JhengHei","Noto Sans TC",sans-serif;background:var(--bg);color:var(--text);padding:20px;max-width:900px;margin:0 auto}
+h1{font-size:1.4rem;margin-bottom:4px}
+.brand{text-align:center;margin:6px 0 14px}
+.brand img{max-width:250px;width:60%;height:auto}
+.sub{color:var(--muted);font-size:.85rem;margin-bottom:16px;line-height:1.7}
+.cond{background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);padding:12px 16px;font-size:.9rem;line-height:1.9;margin-bottom:20px}
+.tablewrap{overflow-x:auto;border-radius:10px}
+table{width:100%;border-collapse:collapse;background:var(--card);border-radius:10px;overflow:hidden;box-shadow:var(--shadow);font-size:.9rem}
+th,td{padding:9px 12px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap}
+th:nth-child(1),td:nth-child(1),th:nth-child(2),td:nth-child(2),th:nth-child(3),td:nth-child(3){text-align:left}
+th{color:var(--muted);background:var(--card)}
+tr:hover td{background:rgba(90,150,240,.06)}
+.chg.up{color:var(--up)} .chg.down{color:var(--down)}
+.mkt{display:inline-block;font-size:.72rem;border:1px solid var(--accent);color:var(--accent);border-radius:99px;padding:0 7px}
+a.stk{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(--accent)}
+a.stk:active,a.stk:hover{opacity:.7}
+.tabs{display:flex;gap:8px;justify-content:center;margin:0 0 16px}
+.tabs .tab{padding:7px 18px;border-radius:99px;border:1px solid var(--border);background:var(--card);
+  color:var(--muted);font-size:.95rem;font-family:inherit;cursor:pointer;font-weight:700}
+.tabs .tab.on{border-color:var(--accent);color:var(--accent);background:rgba(90,150,240,.1)}
+.tf{display:inline-block;font-size:.7rem;border-radius:4px;padding:0 4px;margin:0 1px;border:1px solid var(--border);color:var(--muted)}
+.tf.on{border-color:var(--up);color:var(--up);font-weight:700}
+#mktChip{display:inline-block;font-size:.82rem;border-radius:99px;padding:2px 12px;margin-left:8px;font-weight:700}
+#mktChip.bull{background:rgba(214,69,58,.12);color:var(--up)}
+#mktChip.bear{background:rgba(31,157,85,.12);color:var(--down)}
+.empty{background:var(--card);border:1px dashed var(--border);border-radius:10px;padding:30px;text-align:center;color:var(--muted)}
+#refreshBtn{display:inline-block;margin-left:8px;padding:3px 12px;border-radius:99px;border:1px solid var(--accent);
+  background:transparent;color:var(--accent);font-size:.82rem;cursor:pointer;font-family:inherit}
+#refreshBtn:disabled{opacity:.5;cursor:wait}
+#refreshMsg{font-size:.8rem;color:var(--accent);margin-left:6px}
+details.help{background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);padding:10px 16px;margin-bottom:20px;font-size:.88rem;line-height:1.9}
+details.help summary{cursor:pointer;font-weight:700;color:var(--accent)}
+details.help h3{font-size:.92rem;margin:12px 0 4px}
+details.help p{margin:2px 0}
+.foot{margin:24px 0 8px;color:var(--muted);font-size:.75rem;line-height:1.7}
+/* 手機版：精簡欄位、縮小間距，表格不需左右滑 */
+@media (max-width:640px){
+  body{padding:12px}
+  th,td{padding:7px 3px;font-size:.76rem}
+  .tf{padding:0 2px;margin:0}
+  .hm{display:none}
+}
+</style>
+</head>
+<body>
+<div class="brand"><img src="coco-logo.png" alt="COCO姐 股票KD黃金交叉線"></div>
+
+<div class="tabs">
+  <button class="tab on" data-tab="kd">⚡ KD 低檔金叉</button>
+  <button class="tab" data-tab="pattern">📐 打底翻多</button>
+</div>
+
+<div id="tab-kd">
+<h1>🎯 KD 低檔金叉 + 量增 選股</h1>
+<div class="sub" id="meta">載入中…</div>
+<div class="sub"><button id="refreshBtn">🔄 手動更新</button><span id="mktChip"></span><span id="refreshMsg"></span></div>
+<div class="cond" id="cond"></div>
+
+<details class="help">
+<summary>📖 使用說明（點我展開）</summary>
+<h3>怎麼看這個網頁</h3>
+<p>1️⃣ 先看最上面的「<b>資料日</b>」——這是哪一個交易日收盤的資料。</p>
+<p>2️⃣ 「<b>✅ 兩條件全中</b>」是當天訊號成立的股票（主要名單），依量比排序。</p>
+<p>3️⃣ 「<b>📊 符合度排行</b>」是全市場最接近條件的前 100 名參考名單：紅底✅＝全中；<b>即將金叉</b>＝K 快碰到 D，明後天最可能出現訊號的觀察股。</p>
+<h3>欄位意思</h3>
+<p>💡 <b>股票名稱可以點</b>：直接開 Yahoo 股市該檔即時頁（新分頁），看即時價、K 線圖與新聞。</p>
+<p><b>K（昨→今）</b>：昨天→今天的 K 值，看得出是不是剛交叉。<b>量比</b>：今日量 ÷ 前 5 日均量，1.5＝放大五成、2.0＝翻倍。<b>分數</b>：KD 面 60 分＋量能面 40 分，越接近條件越高。</p>
+<p><b>趨勢欄</b>：「月」亮紅＝股價站上 20 日均線、「季」亮紅＝站上 60 日均線。兩個都亮的是<b>順勢訊號</b>（比較可靠）；都暗的代表股價還在均線下，金叉可能只是下跌中的反彈，要特別小心。<b>大盤燈</b>：加權指數在 20 日線上＝多頭（綠燈環境）、之下＝空頭（此時所有訊號勝率都會變差，宜保守或觀望）。</p>
+<h3>回測提醒（2025-07～2026-07 一年、1,210 個訊號）</h3>
+<p>⚠️ 訊號後 5～10 天<b>約一半的股票會先跌</b>（勝率約 47～50%），策略靠少數大漲股拉高平均報酬。建議：把名單當<b>觀察清單</b>而非直接買進、優先挑「月」亮紅的順勢股、進場設好停損。</p>
+<h3>資料什麼時候更新</h3>
+<p>每個交易日<b>下午 4 點 10 分</b>雲端自動更新（傍晚 6:40 還有一次備援，假日、休市日不更新），完全不需要任何電腦開機。</p>
+<p style="color:var(--muted)">📱 手機用瀏覽器的「加入主畫面」把本頁存起來，之後像 App 一樣點開就看。</p>
+</details>
+
+<h2 style="font-size:1.05rem;margin:6px 0 10px">✅ 兩條件全中</h2>
+<div id="list"></div>
+<h2 style="font-size:1.05rem;margin:26px 0 6px">📊 符合度排行 前 100</h2>
+<div class="sub">KD 面 60 分（金叉30–40=60、金叉更低檔=45、金叉偏高=35、即將金叉=25、已多頭=15）＋ 量能面 40 分（量比越大越高，量比 1.2 起算 30 分）。「即將金叉」是明後天最可能觸發訊號的觀察名單。</div>
+<div id="toplist"></div>
+</div><!-- /tab-kd -->
+
+<div id="tab-pattern" hidden>
+<h1>📐 打底翻多（週線轉強 + 關鍵K突破）</h1>
+<div class="sub" id="pMeta">載入中…</div>
+<div class="sub"><span id="pMktChip"></span></div>
+<div class="cond" id="pCond"></div>
+
+<details class="help">
+<summary>📖 這個策略在找什麼（點我展開）</summary>
+<h3>白話說明</h3>
+<p>這是<b>等趨勢真的轉向才進場</b>的策略，跟「KD 低檔金叉」相反——KD 是趁跌深搶反彈，這個是等打底完成、確認轉強才買。</p>
+<p><b>第一關（週線）</b>：週K收盤站上 10 週均線，而且 10 週均線走平或往上。這代表跌勢真的止住了，底部已經打完，不是猜的。</p>
+<p><b>第二關（同一天的日K）</b>：① 突破下降切線（把最近兩個一個比一個低的高點連成一條線，收盤價衝過它）② 收盤站上月線 ③ 月線當時走平或向上。三件事要在<b>同一根K棒</b>發生。</p>
+<p><b>第三關</b>：當天成交量比前 5 天平均多 20% 以上（突破要有量才算數）。</p>
+<h3>怎麼驗證程式畫的線對不對</h3>
+<p>表格會列出切線的<b>兩個高點日期與價格</b>，還有切線今天的位置。你可以打開看盤軟體，用同樣兩個高點畫一條線，對照程式算的數字是否吻合。</p>
+<h3>回測結果（2023-08～2026-08 三年、541 個訊號，已扣 0.45% 交易成本）</h3>
+<p>整體：20 日勝率 47%、平均 +2.87%。<b>但多空環境差很多</b>：</p>
+<p>🐂 <b>大盤多頭時</b>（419 個訊號）：20 日勝率 50%、平均 <b>+4.07%</b><br>
+🐻 <b>大盤空頭時</b>（122 個訊號）：20 日勝率 36%、平均 <b>−1.24%</b>（會賠錢）</p>
+<p>⚠️ <b>所以請先看頁面上方的大盤燈</b>：亮空頭時，這裡的訊號勝率會明顯變差，寧可觀望。<br>
+另外報酬中位數多半是負的，代表少數大漲股拉高平均——務必設停損，別重押單一檔。</p>
+<h3>誠實比較：兩套策略 vs 無腦買大盤（同期、同樣扣成本、持有20日）</h3>
+<p>📐 打底翻多：勝率 47%、平均 +2.87%｜⚡ KD 金叉：勝率 44%、平均 +0.55%｜📊 <b>同期買大盤：勝率 72%、平均 +3.06%</b></p>
+<p>這 3 年台股是大多頭，<b>兩套選股策略的平均報酬都沒贏過買大盤</b>，勝率更是差一大截。想穩定省事，定期定額買 0050 這類 ETF 在這段期間更好；選股名單的用途是「候選清單」而非「穩賺清單」，適合小額參與、練習判斷。</p>
+<h3>沒有名單是正常的</h3>
+<p>平均一天約 1 檔，常常整天掛零。下方「週線轉強觀察池」是已過第一關、等日K訊號的股票，可以先追蹤。</p>
+</details>
+
+<h2 style="font-size:1.05rem;margin:6px 0 10px">🎯 今日關鍵K買點</h2>
+<div id="pHits"></div>
+
+<h2 style="font-size:1.05rem;margin:26px 0 6px">👀 週線轉強觀察池</h2>
+<div class="sub">已通過第一關（週K站上10週均線且均線走平向上），正等日K關鍵訊號。依「離月線遠近」排序，越前面越接近突破。</div>
+<div id="pWatch"></div>
+</div><!-- /tab-pattern -->
+
+<div class="foot">⚠️ 本工具僅供研究參考，非投資建議。資料來源：台灣證交所（上市）、櫃買中心（上櫃）。<br>
+KD 採台股慣用 (9,3,3)；掃描範圍為 4 碼一般個股（排除 ETF、權證、特別股）。門檻可在 config.json 調整。</div>
+
+<script src="result.js"></script>
+<script src="result_pattern.js"></script>
+<script>
+const R = window.RESULT;
+if(!R){ document.getElementById('meta').textContent = '找不到 result.js，請先執行 kd_screen.py'; }
+else{
+  const C = R.config;
+  // 點名稱 → Yahoo 股市即時頁（上市 .TW／上櫃 .TWO）
+  const stk = (code, mkt, label) =>
+    `<a class="stk" href="https://tw.stock.yahoo.com/quote/${code}.${mkt==='上櫃'?'TWO':'TW'}" target="_blank" rel="noopener"><b>${label}</b></a>`;
+  // 趨勢燈號：月＝站上20日線、季＝站上60日線（亮紅＝符合，順勢訊號較可靠）
+  const trend = r =>
+    `<span class="tf ${r.t20?'on':''}">月</span><span class="tf ${r.t60?'on':''}">季</span>`;
+  // 大盤多空
+  const MK = R.market;
+  if (MK && MK.bull != null) {
+    const chip = document.getElementById('mktChip');
+    chip.className = MK.bull ? 'bull' : 'bear';
+    chip.textContent = MK.bull
+      ? `📈 大盤多頭（${MK.taiex.toLocaleString()} > 20日線 ${MK.ma20.toLocaleString()}）`
+      : `📉 大盤空頭（${MK.taiex.toLocaleString()} < 20日線 ${MK.ma20.toLocaleString()}）訊號勝率通常較差，宜保守`;
+  }
+  document.getElementById('meta').textContent =
+    `資料日：${R.data_date}　|　報表產生：${R.generated_at}　|　掃描 ${R.scanned} 檔 → 符合 ${R.hits.length} 檔`;
+  document.getElementById('cond').innerHTML =
+    `✅ <b>KD 黃金交叉</b>：K 值向上交叉 D 值，且交叉日 K 值在 <b>${C.kd_cross_low}～${C.kd_cross_high}</b>（低檔起漲區）<br>`+
+    `✅ <b>成交量放大</b>：今日量 > 前 5 日均量 × <b>${C.vol_ratio}</b>（且至少 ${C.min_volume_shares/1000} 張，過濾冷門股）`;
+  if(!R.hits.length){
+    document.getElementById('list').innerHTML = '<div class="empty">今天沒有股票同時符合兩個條件</div>';
+  }else{
+    document.getElementById('list').innerHTML = `<div class="tablewrap"><table><thead><tr>
+      <th>代號</th><th>名稱</th><th class="hm">市場</th><th>收盤</th><th>漲跌%</th>
+      <th>K（昨→今）</th><th class="hm">D（昨→今）</th><th class="hm">成交量(張)</th><th>量比</th><th>趨勢</th>
+      </tr></thead><tbody>`+
+      R.hits.map(h=>`<tr>
+        <td>${h.code}</td><td>${stk(h.code,h.mkt,h.name)}</td><td class="hm"><span class="mkt">${h.mkt}</span></td>
+        <td>${h.close}</td>
+        <td class="chg ${h.chg1d>0?'up':h.chg1d<0?'down':''}">${h.chg1d ?? '–'}</td>
+        <td><span class="hm">${h.k_prev} → </span><b>${h.k}</b></td>
+        <td class="hm">${h.d_prev} → <b>${h.d}</b></td>
+        <td class="hm">${h.vol_lot.toLocaleString('zh-TW')}</td><td><b>${h.vol_ratio}</b></td>
+        <td>${trend(h)}</td>
+      </tr>`).join('')+`</tbody></table></div>`;
+  }
+  // 符合度排行 前 100
+  if(R.top && R.top.length){
+    document.getElementById('toplist').innerHTML = `<div class="tablewrap"><table><thead><tr>
+      <th>#</th><th>代號</th><th>名稱</th><th class="hm">市場</th><th>收盤</th><th class="hm">漲跌%</th>
+      <th>KD狀態</th><th class="hm">K</th><th class="hm">D</th><th>量比</th><th>分數</th><th>趨勢</th>
+      </tr></thead><tbody>`+
+      R.top.map(t=>`<tr${t.hit?' style="background:rgba(214,69,58,.07)"':''}>
+        <td>${t.rank}</td><td>${t.code}</td><td>${stk(t.code,t.mkt,t.name)}${t.hit?' ✅':''}</td>
+        <td class="hm"><span class="mkt">${t.mkt}</span></td><td>${t.close}</td>
+        <td class="hm chg ${t.chg1d>0?'up':t.chg1d<0?'down':''}">${t.chg1d ?? '–'}</td>
+        <td>${t.kd_state}</td><td class="hm">${t.k}</td><td class="hm">${t.d}</td>
+        <td>${t.vol_ratio}</td><td><b>${t.score}</b></td>
+        <td>${trend(t)}</td>
+      </tr>`).join('')+`</tbody></table></div>`;
+  }
+
+  /* 🔄 手動更新：先確認有無新資料 → 沒有就請雲端跑一次 → 偵測到新資料自動重載 */
+  const btn = document.getElementById('refreshBtn'), rmsg = document.getElementById('refreshMsg');
+  const fetchResult = () => fetch('result.js?t=' + Date.now(), {cache:'no-store'})
+    .then(r=>r.text()).then(t=>JSON.parse(t.slice(t.indexOf('=')+1)));
+  btn.onclick = async () => {
+    btn.disabled = true; rmsg.textContent = '檢查中…';
+    try{
+      const fresh = await fetchResult();
+      if (fresh.generated_at !== R.generated_at) { rmsg.textContent = '發現新資料，重新載入…'; location.reload(); return; }
+      const api = await (await fetch('/api/refresh')).json();
+      rmsg.textContent = api.msg;
+      if (api.dispatched) {
+        let tries = 0;
+        const timer = setInterval(async () => {
+          tries++;
+          try{
+            const f = await fetchResult();
+            if (f.generated_at !== R.generated_at) { clearInterval(timer); rmsg.textContent = '更新完成，重新載入…'; location.reload(); return; }
+          }catch(e){}
+          if (tries >= 12) { clearInterval(timer); rmsg.textContent = '雲端已執行，資料日未變（今日休市或尚未收盤），可稍後再點'; btn.disabled = false; }
+          else rmsg.textContent = `雲端更新中…（${tries*15} 秒）`;
+        }, 15000);
+        return;
+      }
+    }catch(e){ rmsg.textContent = '更新檢查失敗，請直接重新整理頁面'; }
+    btn.disabled = false;
+  };
+}
+
+/* ===== 分頁切換 ===== */
+document.querySelectorAll('.tabs .tab').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tabs .tab').forEach(x => x.classList.toggle('on', x === b));
+  document.getElementById('tab-kd').hidden = b.dataset.tab !== 'kd';
+  document.getElementById('tab-pattern').hidden = b.dataset.tab !== 'pattern';
+  window.scrollTo(0, 0);
+});
+
+/* ===== 打底翻多分頁 ===== */
+(function(){
+  const P = window.RESULT_PATTERN;
+  if(!P){ document.getElementById('pMeta').textContent = '找不到 result_pattern.js，請先執行 pattern_screen.py'; return; }
+  const C = P.config;
+  const link = (c, m, label) =>
+    `<a class="stk" href="https://tw.stock.yahoo.com/quote/${c}.${m==='上櫃'?'TWO':'TW'}" target="_blank" rel="noopener"><b>${label}</b></a>`;
+  document.getElementById('pMeta').textContent =
+    `資料日：${P.data_date}　|　報表產生：${P.generated_at}　|　掃描 ${P.scanned} 檔 → 買點 ${P.hits.length} 檔、觀察池 ${P.watch.length} 檔`;
+  // 大盤環境警示（3年回測：空頭時 20日平均 -1.24%、多頭時 +4.07%）
+  const PM = P.market;
+  if (PM && PM.bull != null) {
+    const chip = document.getElementById('pMktChip');
+    chip.id = 'mktChip';
+    chip.className = PM.bull ? 'bull' : 'bear';
+    chip.textContent = PM.bull
+      ? `📈 大盤多頭（${PM.taiex.toLocaleString()} > 20日線）— 回測此環境 20 日平均 +4.07%`
+      : `📉 大盤空頭（${PM.taiex.toLocaleString()} < 20日線）— 回測此環境 20 日平均 −1.24%，訊號逆風，宜觀望`;
+  }
+  document.getElementById('pCond').innerHTML =
+    `✅ <b>週線</b>：週K收盤站上 ${C.w_ma} 週均線，且 ${C.w_ma} 週均線走平或向上<br>`+
+    `✅ <b>日K關鍵棒（同一天）</b>：突破下降切線（有效切線）＋ 收盤站上月線 ＋ 月線走平或向上<br>`+
+    `✅ <b>量能</b>：當日量 > 前 5 日均量 × ${C.vol_ratio}，且 ≥ ${C.min_volume_shares/1000} 張`;
+
+  const hitTable = rows => rows.length ? `<div class="tablewrap"><table><thead><tr>
+      <th>代號</th><th>名稱</th><th class="hm">市場</th><th>收盤</th><th>漲跌%</th>
+      <th>切線今值</th><th class="hm">切線兩高點</th><th>月線</th><th class="hm">10週線</th><th>量比</th>
+      </tr></thead><tbody>`+
+      rows.map(x=>`<tr>
+        <td>${x.code}</td><td>${link(x.code,x.mkt,x.name)}</td>
+        <td class="hm"><span class="mkt">${x.mkt}</span></td>
+        <td>${x.close}</td>
+        <td class="chg ${x.chg1d>0?'up':x.chg1d<0?'down':''}">${x.chg1d}</td>
+        <td><b>${x.tl?x.tl.today:'–'}</b></td>
+        <td class="hm">${x.tl?`${x.tl.h1_date.slice(5)} ${x.tl.h1} → ${x.tl.h2_date.slice(5)} ${x.tl.h2}`:'–'}</td>
+        <td>${x.ma20}</td><td class="hm">${x.w_ma10}（${x.w_slope>=0?'+':''}${x.w_slope}%）</td>
+        <td><b>${x.vol_ratio}</b></td>
+      </tr>`).join('')+`</tbody></table></div>`
+    : '<div class="empty">今日沒有股票同時符合全部條件<br><span style="font-size:.85rem">平均一天約 1 檔，掛零是正常的——請看下方觀察池</span></div>';
+
+  document.getElementById('pHits').innerHTML = hitTable(P.hits);
+
+  document.getElementById('pWatch').innerHTML = P.watch.length ? `<div class="tablewrap"><table><thead><tr>
+      <th>代號</th><th>名稱</th><th class="hm">市場</th><th>收盤</th><th>漲跌%</th>
+      <th>月線</th><th>距月線</th><th class="hm">10週線</th><th>10週線斜率</th><th class="hm">切線今值</th>
+      </tr></thead><tbody>`+
+      P.watch.map(x=>{
+        const gap = ((x.close/x.ma20-1)*100).toFixed(1);
+        return `<tr>
+        <td>${x.code}</td><td>${link(x.code,x.mkt,x.name)}</td>
+        <td class="hm"><span class="mkt">${x.mkt}</span></td>
+        <td>${x.close}</td>
+        <td class="chg ${x.chg1d>0?'up':x.chg1d<0?'down':''}">${x.chg1d}</td>
+        <td>${x.ma20}</td>
+        <td class="chg ${gap>0?'up':'down'}">${gap>0?'+':''}${gap}%</td>
+        <td class="hm">${x.w_ma10}</td>
+        <td class="chg ${x.w_slope>=0?'up':'down'}">${x.w_slope>=0?'+':''}${x.w_slope}%</td>
+        <td class="hm">${x.tl?x.tl.today:'–'}</td>
+      </tr>`;}).join('')+`</tbody></table></div>`
+    : '<div class="empty">目前沒有週線轉強的股票</div>';
+})();
+</script>
+</body>
+</html>
