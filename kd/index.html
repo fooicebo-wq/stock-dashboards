@@ -47,6 +47,12 @@ a.stk:active,a.stk:hover{opacity:.7}
   background:transparent;color:var(--accent);font-size:.82rem;cursor:pointer;font-family:inherit}
 #refreshBtn:disabled{opacity:.5;cursor:wait}
 #refreshMsg{font-size:.8rem;color:var(--accent);margin-left:6px}
+.stale{background:rgba(214,69,58,.12);border:2px solid var(--up);color:var(--up);
+  border-radius:10px;padding:12px 16px;margin:10px 0;font-weight:700;line-height:1.7}
+.rule{background:var(--card);border:2px solid var(--gold,#b8860b);border-radius:10px;
+  padding:12px 16px;margin:14px 0;font-size:.9rem;line-height:1.9;box-shadow:var(--shadow)}
+.rule h3{font-size:.95rem;margin:0 0 6px;color:var(--gold,#b8860b)}
+.rule b{color:var(--up)}
 details.help{background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);padding:10px 16px;margin-bottom:20px;font-size:.88rem;line-height:1.9}
 details.help summary{cursor:pointer;font-weight:700;color:var(--accent)}
 details.help h3{font-size:.92rem;margin:12px 0 4px}
@@ -63,6 +69,18 @@ details.help p{margin:2px 0}
 </head>
 <body>
 <div class="brand"><img src="coco-logo.png" alt="COCO姐 股票KD黃金交叉線"></div>
+<div id="staleWarn"></div>
+
+<div class="rule">
+<h3>💡 買進後的操作紀律（三年回測驗證，比選股更重要）</h3>
+① <b>設 −8% 停損</b>：跌破就賣，不要凹。<br>
+② <b>最多抱 20 個交易日</b>（約一個月），到期就出場。<br>
+③ <b>不要設停利</b>——讓賺的繼續跑，獲利全靠少數大漲的股票。<br>
+<span style="font-size:.85rem;color:var(--muted)">
+依 5,048 個歷史訊號實測：加上 −8% 停損後，打底翻多的平均報酬從 +2.47% 升到 +3.02%，
+而<b>最大單筆虧損從 −93% 大幅降到 −8.5%</b>。反之若加停利，報酬會掉到 +1.04%（賺的被提早砍掉）。
+代價是勝率下降（常被洗出場），這是用勝率換安全，且實際停損遇跳空可能更差。</span>
+</div>
 
 <div class="tabs">
   <button class="tab on" data-tab="kd">⚡ KD 低檔金叉</button>
@@ -135,7 +153,10 @@ details.help p{margin:2px 0}
 <div id="pWatch"></div>
 </div><!-- /tab-pattern -->
 
-<div class="foot">⚠️ 本工具僅供研究參考，非投資建議。資料來源：台灣證交所（上市）、櫃買中心（上櫃）。<br>
+<div class="foot"><b style="color:var(--up)">⚠️ 買賣前請自行複核</b>：本表由程式自動產生，資料源（證交所／櫃買）若改版或當日資料缺漏都可能導致數字有誤。
+下單前請務必用你的看盤軟體確認該股的即時價格、KD 值與成交量，不要只憑本表。<br>
+另注意：本表用的是<b>實際成交價（未還原權息）</b>，個股除權息當天會出現價格斷崖，該股前後數日的指標可能失真。<br>
+⚠️ 本工具僅供研究參考，非投資建議。資料來源：台灣證交所（上市）、櫃買中心（上櫃）。<br>
 KD 採台股慣用 (9,3,3)；掃描範圍為 4 碼一般個股（排除 ETF、權證、特別股）。門檻可在 config.json 調整。</div>
 
 <script src="result.js"></script>
@@ -226,6 +247,30 @@ else{
     btn.disabled = false;
   };
 }
+
+/* ===== 資料過期警告（關乎買賣決策，資料不是最新就要明顯提示）===== */
+(function(){
+  const R0 = window.RESULT;
+  if(!R0 || !R0.data_date) return;
+  // 計算資料日到今天之間有幾個「應該有資料的交易日」（扣除週末，不含國定假日）
+  const today = new Date(); today.setHours(0,0,0,0);
+  const dd = new Date(R0.data_date + 'T00:00:00');
+  let workdays = 0;
+  for(let d = new Date(dd); d < today; d.setDate(d.getDate()+1)){
+    const w = d.getDay();
+    if(w >= 1 && w <= 5) workdays++;
+  }
+  // 收盤前（15:30 之前）當天本來就還沒有資料，不算落後
+  const beforeClose = today.getHours() < 16;
+  const lag = beforeClose ? workdays - 1 : workdays;
+  if(lag >= 2){
+    document.getElementById('staleWarn').innerHTML =
+      `<div class="stale">⚠️ 資料可能不是最新的<br>` +
+      `<span style="font-weight:400;font-size:.9rem">目前顯示的是 <b>${R0.data_date}</b> 的收盤資料，` +
+      `距今已隔約 ${lag} 個交易日。可能是自動更新失敗——請按「🔄 手動更新」，` +
+      `或改用另一個網址查看。<b>做任何買賣決定前，請先確認上面的資料日是最近的交易日。</b></span></div>`;
+  }
+})();
 
 /* ===== 分頁切換 ===== */
 document.querySelectorAll('.tabs .tab').forEach(b => b.onclick = () => {
